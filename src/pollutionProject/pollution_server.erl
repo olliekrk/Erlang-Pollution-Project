@@ -1,6 +1,6 @@
 -module(pollution_server).
 -author("olliekrk").
-
+%% komentarz dla zmiany kodu
 %% pollution
 -import(pollution,
 [createMonitor/0,
