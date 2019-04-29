@@ -23,70 +23,66 @@ init() ->
 
 %% creates a server and returns itd PID
 start() ->
-  Pid = spawn(fun() -> init() end),
+  Pid = spawn_link(fun init/0),
   ResolveFun = fun(server, _, _) -> Pid end,
   global:register_name(server, Pid, ResolveFun),
-  io:format("Starting the server with PID: ~p.", [Pid]).
+  io:format("~p: Starting the server with PID: ~p~n", [?MODULE, Pid]),
+  Pid.
 
 %% server shutdown
 stop() ->
   global:send(server, stop).
+
 %% server crash
 crash() ->
   global:send(server, crash).
 
 %% server loop
 server_loop(M) ->
-  try
-    receive
-      {_, add_station, Name, Location} ->
-        Result = addStation(Name, Location, M),
-        io:format("Result is: ~w", [Result]),
-        server_loop(Result),
-        ok;
+  receive
+    {_, add_station, Name, Location} ->
+      server_loop(addStation(Name, Location, M)),
+      ok;
 
-      {_, add_value, Identifier, Datetime, Param, Value} ->
-        server_loop(addValue(Identifier, Datetime, Param, Value, M)),
-        ok;
+    {_, add_value, Identifier, Datetime, Param, Value} ->
+      server_loop(addValue(Identifier, Datetime, Param, Value, M)),
+      ok;
 
-      {_, remove_value, Identifier, Datetime, Param} ->
-        server_loop(removeValue(Identifier, Datetime, Param, M)),
-        ok;
+    {_, remove_value, Identifier, Datetime, Param} ->
+      server_loop(removeValue(Identifier, Datetime, Param, M)),
+      ok;
 
-      {Pid, get_value, Identifier, Datetime, Param} ->
-        Pid ! {response, getOneValue(Identifier, Datetime, Param, M)},
-        server_loop(M);
+    {Pid, get_value, Identifier, Datetime, Param} ->
+      Pid ! {response, getOneValue(Identifier, Datetime, Param, M)},
+      server_loop(M);
 
-      {Pid, get_station_mean, Identifier, Datetime} ->
-        Pid ! {response, getStationMean(Identifier, Datetime, M)},
-        server_loop(M);
+    {Pid, get_station_mean, Identifier, Datetime} ->
+      Pid ! {response, getStationMean(Identifier, Datetime, M)},
+      server_loop(M);
 
-      {Pid, get_daily_mean, Date, Param} ->
-        Pid ! {response, getDailyMean(Date, Param, M)},
-        server_loop(M);
+    {Pid, get_daily_mean, Date, Param} ->
+      Pid ! {response, getDailyMean(Date, Param, M)},
+      server_loop(M);
 
-      {Pid, get_max_growth, Identifier, Date, Param} ->
-        Pid ! {response, getMaximumStationGrowthTime(Identifier, Date, Param, M)},
-        server_loop(M);
+    {Pid, get_max_growth, Identifier, Date, Param} ->
+      Pid ! {response, getMaximumStationGrowthTime(Identifier, Date, Param, M)},
+      server_loop(M);
 
-      stop ->
-        io:format("Shutting down the server with PID: ~p.~n", [self()]), ok;
+    stop ->
+      io:format("Shutting down the server with PID: ~p~n", [self()]), ok;
 
-      crash ->
-        ErrorVar = 1 / 0,
-        io:format("Error: ~p~n.", [ErrorVar]),
-        server_loop(M);
+    crash ->
+      ErrorVar = 1 / 0,
+      io:format("Error: ~p~n.", [ErrorVar]),
+      server_loop(M);
 
-      _ ->
-        io:format("Unrecognized request.~n"),
-        server_loop(M)
+    _ ->
+      io:format("Unrecognized request.~n"),
+      server_loop(M)
 
-    after
-      60000 ->
-        io:format("Inactivity for 60 s.~n"),
-        io:format("Shutting down the server with PID: ~p.~n", [self()]), ok
-    end
-  catch
-    _:Reason ->
-      io:format("Server crashed because of: ~p~n", [Reason])
+  after
+    60000 ->
+      io:format("Inactivity for 60 s~n"),
+      io:format("Shutting down the server with PID: ~p~n", [self()]), ok
+
   end.
