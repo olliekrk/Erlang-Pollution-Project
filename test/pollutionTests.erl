@@ -15,16 +15,16 @@ getStationByName_test() ->
   M = pollution:createMonitor(),
   M1 = pollution:addStation(St#station.name, St#station.location, M),
 
-  ?assertEqual(St, pollution:getStationByName(St#station.name, M1)),
-  ?assertException(error, _, pollution:getStationByName("NULL", M1)).
+  ?assertEqual(St, pollution:findStationByName(St#station.name, M1)),
+  ?assertException(error, _, pollution:findStationByName("NULL", M1)).
 
 getStationByLocation_test() ->
   St = #station{name = "Testowa1", location = {1, 1}},
   M = pollution:createMonitor(),
   M1 = pollution:addStation(St#station.name, St#station.location, M),
 
-  ?assertEqual(St, pollution:getStationByLocation(St#station.location, M1)),
-  ?assertException(error, _, pollution:getStationByLocation({-1, -1}, M1)).
+  ?assertEqual(St, pollution:findStationByLocation(St#station.location, M1)),
+  ?assertException(error, _, pollution:findStationByLocation({-1, -1}, M1)).
 % + exception throwing test
 
 
@@ -35,7 +35,7 @@ addStation_test() ->
   M1 = pollution:addStation("Testowa1", {1, 1}, M),
   M2 = pollution:addStation("Testowa2", {2, 2}, M1),
 
-  ?assertEqual(St1, pollution:getStationByName("Testowa1", M2)),
-  ?assertEqual(St2, pollution:getStationByName("Testowa2", M2))
+  ?assertEqual(St1, pollution:findStationByName("Testowa1", M2)),
+  ?assertEqual(St2, pollution:findStationByName("Testowa2", M2))
 % + exception throwing test
 .
