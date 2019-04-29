@@ -26,7 +26,7 @@ start() ->
   Pid = spawn_link(fun init/0),
   ResolveFun = fun(server, _, _) -> Pid end,
   global:register_name(server, Pid, ResolveFun),
-  io:format("~p: Starting the server with PID: ~p~n", [?MODULE, Pid]),
+  io:format("Starting new server with PID: ~p~n", [Pid]),
   Pid.
 
 %% server shutdown
@@ -41,16 +41,13 @@ crash() ->
 server_loop(M) ->
   receive
     {_, add_station, Name, Location} ->
-      server_loop(addStation(Name, Location, M)),
-      ok;
+      server_loop(addStation(Name, Location, M));
 
     {_, add_value, Identifier, Datetime, Param, Value} ->
-      server_loop(addValue(Identifier, Datetime, Param, Value, M)),
-      ok;
+      server_loop(addValue(Identifier, Datetime, Param, Value, M));
 
     {_, remove_value, Identifier, Datetime, Param} ->
-      server_loop(removeValue(Identifier, Datetime, Param, M)),
-      ok;
+      server_loop(removeValue(Identifier, Datetime, Param, M));
 
     {Pid, get_value, Identifier, Datetime, Param} ->
       Pid ! {response, getOneValue(Identifier, Datetime, Param, M)},
