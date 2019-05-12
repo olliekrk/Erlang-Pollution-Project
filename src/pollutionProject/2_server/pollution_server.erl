@@ -26,6 +26,7 @@ start() ->
   Pid = spawn_link(fun init/0),
   ResolveFun = fun(server, _, _) -> Pid end,
   global:register_name(server, Pid, ResolveFun),
+  register(server, Pid),
   io:format("Starting new server with PID: ~p~n", [Pid]),
   Pid.
 
@@ -78,8 +79,8 @@ server_loop(M) ->
       server_loop(M)
 
   after
-    60000 ->
-      io:format("Inactivity for 60 s~n"),
+    30000 ->
+      io:format("Inactivity for 30 s~n"),
       io:format("Shutting down the server with PID: ~p~n", [self()]), ok
 
   end.
