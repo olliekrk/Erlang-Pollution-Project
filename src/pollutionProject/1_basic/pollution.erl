@@ -9,8 +9,8 @@
   getOneValue/4,
   getStationMean/3,
   getDailyMean/3,
-  getMaximumStationGrowthTime/4
-]).
+  getMaximumStationGrowthTime/4,
+  findStationByName/2, findStationByLocation/2]).
 
 -record(station, {name, location}).
 -record(measurement, {param, value, datetime}).

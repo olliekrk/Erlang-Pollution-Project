@@ -1,10 +1,9 @@
--module(pollutionTests).
+-module(pollution_test).
 -author("olliekrk").
 
 -include_lib("eunit/include/eunit.hrl").
 
 -compile(export_all).
--export([]).
 
 -record(station, {name, location}).
 -record(measurement, {param, value, datetime}).

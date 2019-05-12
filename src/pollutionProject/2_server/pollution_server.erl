@@ -14,8 +14,9 @@ getMaximumStationGrowthTime/4,
 test/0
 ]).
 
-%% API
--export([start/0, stop/0, crash/0, server_loop/1]).
+%% Server & Pollution API
+-export([start/0, stop/0, crash/0, server_loop/1, receiveAny/0,
+  addStation/2, addValue/4, removeValue/3, getOneValue/3, getStationMean/2, getDailyMean/2, getMaximumStationGrowthTime/3]).
 
 %% initializes pollution server
 init() ->
@@ -84,3 +85,36 @@ server_loop(M) ->
       io:format("Shutting down the server with PID: ~p~n", [self()]), ok
 
   end.
+
+receiveAny() ->
+  receive
+    Any -> Any
+  end.
+
+addStation(Name, Location) ->
+  global:send(server, {self(), add_station, Name, Location}),
+  ok.
+
+addValue(Identifier, Datetime, Param, Value) ->
+  global:send(server, {self(), add_value, Identifier, Datetime, Param, Value}),
+  ok.
+
+removeValue(Identifier, Datetime, Param) ->
+  global:send(server, {self(), remove_value, Identifier, Datetime, Param}),
+  ok.
+
+getOneValue(Identifier, Datetime, Param) ->
+  global:send(server, {self(), get_value, Identifier, Datetime, Param}),
+  receiveAny().
+
+getStationMean(Identifier, Datetime) ->
+  global:send(server, {self(), get_station_mean, Identifier, Datetime}),
+  receiveAny().
+
+getDailyMean(Date, Param) ->
+  global:send(server, {self(), get_daily_mean, Date, Param}),
+  receiveAny().
+
+getMaximumStationGrowthTime(Identifier, Date, Param) ->
+  global:send(server, {self(), get_max_growth, Identifier, Date, Param}),
+  receiveAny().
