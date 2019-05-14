@@ -83,8 +83,9 @@ removeValue(Name, Datetime, Param, M) ->
   removeValueUtil(Station, Datetime, Param, M).
 
 removeValueUtil(Station, Datetime, Param, M) ->
-  Filter = fun(K, V) -> K /= Station orelse V#measurement.param /= Param orelse V#measurement.datetime /= Datetime end,
-  M#monitor{data = maps:filter(Filter, M#monitor.data)}.
+  FilterFun = fun(Ms) -> Ms#measurement.param /= Param orelse Ms#measurement.datetime /= Datetime end,
+  FilteredList = lists:filter(FilterFun, maps:get(Station, M#monitor.data)),
+  M#monitor{data = (M#monitor.data)#{Station => FilteredList}}.
 
 getOneValue({_, _} = Location, Datetime, Param, M) ->
   Station = findStationByLocation(Location, M),

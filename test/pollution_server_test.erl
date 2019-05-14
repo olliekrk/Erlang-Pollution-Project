@@ -16,7 +16,7 @@ addStation_test() ->
   ?assertEqual(ok, pollution_server:addStation("Krakow", {0, 1})),
   ?assertEqual(ok, pollution_server:addStation("Gdynia", {1, 0})),
   ?assertEqual(ok, pollution_server:addStation("Zakopane", {9, 9})),
-%%  ?assertMatch({exit, _}, pollution_server:addStation("Zakopane", {9,8})),
+%%  ?assertException(_, _, pollution_server:addStation("Zakopane", {9,8})),
   ?assertEqual(ok, pollution_server:addStation("Wadowice", {1, 1})).
 
 addValue_test() ->
@@ -24,7 +24,7 @@ addValue_test() ->
   ?assertEqual(ok, pollution_server:addValue("Krakow", ?DATE_TIME, pm10, 90.0)),
   ?assertEqual(ok, pollution_server:addValue({1, 0}, ?DATE_TIME, pm10, 80.0)),
   ?assertEqual(ok, pollution_server:addValue({9, 9}, ?DATE_TIME, pm10, 70.0)),
-%%  ?assertMatch({exit, _}, pollution_server:addValue({9,9}, ?DATE_TIME, pm10, 99.0})),
+%%  ?assertException(_, _, pollution_server:addValue({9,9}, ?DATE_TIME, pm10, 99.0})),
   ?assertEqual(ok, pollution_server:addValue("Wadowice", ?DATE_TIME, pm10, 0.0)).
 
 -define(MEASUREMENT(Value), {measurement, pm10, Value, ?DATE_TIME}).

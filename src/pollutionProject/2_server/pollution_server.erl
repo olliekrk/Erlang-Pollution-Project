@@ -15,8 +15,19 @@ test/0
 ]).
 
 %% Server & Pollution API
--export([start/0, stop/0, crash/0, server_loop/1, receiveAny/0,
-  addStation/2, addValue/4, removeValue/3, getOneValue/3, getStationMean/2, getDailyMean/2, getMaximumStationGrowthTime/3]).
+-export([
+  start/0,
+  stop/0,
+  crash/0,
+  server_loop/1,
+  receiveAny/0,
+  addStation/2,
+  addValue/4,
+  removeValue/3,
+  getOneValue/3,
+  getStationMean/2,
+  getDailyMean/2,
+  getMaximumStationGrowthTime/3]).
 
 %% initializes pollution server
 init() ->
