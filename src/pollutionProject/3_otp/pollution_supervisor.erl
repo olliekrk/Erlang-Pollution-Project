@@ -9,6 +9,9 @@
 -export([start_supervisor/0, init/1, stop/0]).
 
 start_supervisor() ->
+  ets:new(backup, [ordered_set, named_table, public]),
+  Monitor = pollution:createMonitor(),
+  ets:insert(backup, [{lastState, Monitor}]),
   supervisor:start_link({local, pollution_supervisor1}, ?MODULE, []).
 
 init(_Args) ->

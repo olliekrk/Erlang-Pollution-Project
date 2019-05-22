@@ -10,7 +10,7 @@
   getStationMean/3,
   getDailyMean/3,
   getMaximumStationGrowthTime/4,
-  findStationByName/2, findStationByLocation/2]).
+  findStationByName/2, findStationByLocation/2, findMatchingMeasurements/3]).
 
 -record(station, {name, location}).
 -record(measurement, {param, value, datetime}).
@@ -22,35 +22,40 @@ findStationByName(Name, M) ->
   try maps:find(Name, M#monitor.stations_by_names) of
     {ok, Station} -> Station
   catch
-    _:_ -> erlang:throw("Station with such name does not exist.")
+    _ -> {error, "Station with such name does not exist."}
   end.
 
 findStationByLocation({_, _} = Location, M) ->
   try maps:find(Location, M#monitor.locations_map) of
     {ok, Name} -> findStationByName(Name, M)
   catch
-    _:_ -> erlang:throw("Station with such location does not exist.")
+    _ -> {error, "Station with such location does not exist."}
   end.
 
 findMatchingMeasurements(Station, Param, M) ->
   try maps:find(Station, M#monitor.data) of
     {ok, AllMs} -> [Ms || Ms <- AllMs, Ms#measurement.param == Param]
   catch
-    _:_ -> erlang:throw("No matching measurements.")
+    _ -> {error, "No matching measurements."}
   end.
 
 findMatchingMeasurements(Station, {{_, _, _}, {_, _, _}} = Datetime, Param, M) ->
-  List = findMatchingMeasurements(Station, Param, M),
-  [Ms || Ms <- List, Ms#measurement.datetime == Datetime];
+  case findMatchingMeasurements(Station, Param, M) of
+    {error, Reason} -> {error, Reason};
+    List -> [Ms || Ms <- List, Ms#measurement.datetime == Datetime]
+  end;
 
 findMatchingMeasurements(Station, {_, _, _} = Date, Param, M) ->
-  List = findMatchingMeasurements(Station, Param, M),
-  GetDate = fun({DT_Date, _}) -> DT_Date end,
-  [Ms || Ms <- List, GetDate(Ms#measurement.datetime) == Date].
+  case findMatchingMeasurements(Station, Param, M) of
+    {error, Reason} -> {error, Reason};
+    List ->
+      GetDate = fun({DT_Date, _}) -> DT_Date end,
+      [Ms || Ms <- List, GetDate(Ms#measurement.datetime) == Date]
+  end.
 
 addStation(Name, Location, M) ->
   case (maps:is_key(Location, M#monitor.locations_map) orelse maps:is_key(Name, M#monitor.stations_by_names)) of
-    true -> erlang:throw("Station is already registered.");
+    true -> {error, "Station is already registered."};
     false ->
       Station = #station{name = Name, location = Location},
       #monitor{
@@ -60,27 +65,35 @@ addStation(Name, Location, M) ->
   end.
 
 addValue({_, _} = Location, Datetime, Param, Value, M) ->
-  Station = findStationByLocation(Location, M),
-  addValueUtil(Station, #measurement{param = Param, value = Value, datetime = Datetime}, M);
+  case findStationByLocation(Location, M) of
+    {error, R} -> {error, R};
+    Station -> addValueUtil(Station, #measurement{param = Param, value = Value, datetime = Datetime}, M)
+  end;
 
 addValue(Name, Datetime, Param, Value, M) ->
-  Station = findStationByName(Name, M),
-  addValueUtil(Station, #measurement{param = Param, value = Value, datetime = Datetime}, M).
+  case findStationByName(Name, M) of
+    {error, R} -> {error, R};
+    Station -> addValueUtil(Station, #measurement{param = Param, value = Value, datetime = Datetime}, M)
+  end.
 
 addValueUtil(Station, NewMs, M) ->
   AllMs = maps:get(Station, M#monitor.data),
   case [Ms || Ms <- AllMs, Ms#measurement.datetime == NewMs#measurement.datetime, Ms#measurement.param == NewMs#measurement.param] of
     [] -> M#monitor{data = (M#monitor.data)#{Station => [NewMs | AllMs]}};
-    _ -> erlang:throw("Measurement is already in the database.")
+    _ -> {error, "Measurement is already in the database."}
   end.
 
 removeValue({_, _} = Location, Datetime, Param, M) ->
-  Station = findStationByLocation(Location, M),
-  removeValueUtil(Station, Datetime, Param, M);
+  case findStationByLocation(Location, M) of
+    {error, R} -> {error, R};
+    Station -> removeValueUtil(Station, Datetime, Param, M)
+  end;
 
 removeValue(Name, Datetime, Param, M) ->
-  Station = findStationByName(Name, M),
-  removeValueUtil(Station, Datetime, Param, M).
+  case findStationByName(Name, M) of
+    {error, R} -> {error, R};
+    Station -> removeValueUtil(Station, Datetime, Param, M)
+  end.
 
 removeValueUtil(Station, Datetime, Param, M) ->
   FilterFun = fun(Ms) -> Ms#measurement.param /= Param orelse Ms#measurement.datetime /= Datetime end,
@@ -88,29 +101,38 @@ removeValueUtil(Station, Datetime, Param, M) ->
   M#monitor{data = (M#monitor.data)#{Station => FilteredList}}.
 
 getOneValue({_, _} = Location, Datetime, Param, M) ->
-  Station = findStationByLocation(Location, M),
-  getOneValueUtil(Station, Datetime, Param, M);
+  case findStationByLocation(Location, M) of
+    {error, R} -> {error, R};
+    Station -> getOneValueUtil(Station, Datetime, Param, M)
+  end;
 
 getOneValue(Name, Datetime, Param, M) ->
-  Station = findStationByName(Name, M),
-  getOneValueUtil(Station, Datetime, Param, M).
+  case findStationByName(Name, M) of
+    {error, R} -> {error, R};
+    Station -> getOneValueUtil(Station, Datetime, Param, M)
+  end.
 
 getOneValueUtil(Station, Datetime, Param, M) ->
   case findMatchingMeasurements(Station, Datetime, Param, M) of
+    {error, R} -> {error, R};
     [SingleMs] -> SingleMs;
-    _ -> erlang:throw("More than one measurement was found.")
+    _ -> {error, "More than one measurement was found."}
   end.
 
 getStationMean({_, _} = Location, Param, M) ->
-  Station = findStationByLocation(Location, M),
-  getStationMeanUtil(Station, Param, M);
+  case findStationByLocation(Location, M) of
+    {error, R} -> {error, R};
+    Station -> getStationMeanUtil(Station, Param, M)
+  end;
 
 getStationMean(Name, Param, M) ->
-  Station = findStationByName(Name, M),
-  getStationMeanUtil(Station, Param, M).
+  case findStationByName(Name, M) of
+    {error, R} -> {error, R};
+    Station -> getStationMeanUtil(Station, Param, M) end.
 
 getStationMeanUtil(Station, Param, M) ->
   case findMatchingMeasurements(Station, Param, M) of
+    {error, R} -> {error, R};
     [] -> 0;
     MsList ->
       lists:foldl(fun(Ms, Acc) -> Ms#measurement.value + Acc end, 0, MsList) / length(MsList)
@@ -121,7 +143,7 @@ getStationDailyMean(Station, M, DateParamFilter) ->
     {ok, AllMs} ->
       MsList = lists:filter(DateParamFilter, AllMs),
       lists:foldl(fun(Ms, Acc) -> Ms#measurement.value + Acc end, 0, MsList) / lists:flatlength(MsList);
-    _ -> erlang:throw("Station data does not exist")
+    _ -> {error, "Station data does not exist"}
   end.
 
 getDailyMean(Date, Param, M) ->
@@ -129,14 +151,13 @@ getDailyMean(Date, Param, M) ->
     {MsDate, _} = Ms#measurement.datetime,
     MsDate == Date andalso Ms#measurement.param == Param end,
 
-  MeanFun = fun(Station) ->
-    getStationDailyMean(Station, M, FilterFun) end,
+  MeanFun = fun(Station) -> getStationDailyMean(Station, M, FilterFun) end,
 
   Stations = maps:keys(M#monitor.data),
   try
-    lists:sum(lists:map(MeanFun, Stations)) / lists:flatlength(Stations)
+    lists:sum(lists:map(MeanFun, Stations)) / length((Stations))
   catch
-    _:Reason -> erlang:throw(Reason)
+    _ -> no_data
   end.
 
 getGrowth(Ms, NextMs) ->
@@ -150,12 +171,16 @@ zipToGrowths([Ms | MsTail], [NextMs | NextMsTail]) ->
   [getGrowth(Ms, NextMs) | zipToGrowths(MsTail, NextMsTail)].
 
 getMaximumStationGrowthTime({_, _} = Location, Date, Param, M) ->
-  Station = findStationByLocation(Location, M),
-  getMaximumStationGrowthTimeUtil(Station, Date, Param, M);
+  case findStationByLocation(Location, M) of
+    {error, R} -> {error, R};
+    Station -> getMaximumStationGrowthTimeUtil(Station, Date, Param, M)
+  end;
 
 getMaximumStationGrowthTime(Name, Date, Param, M) ->
-  Station = findStationByName(Name, M),
-  getMaximumStationGrowthTimeUtil(Station, Date, Param, M).
+  case findStationByName(Name, M) of
+    {error, R} -> {error, R};
+    Station -> getMaximumStationGrowthTimeUtil(Station, Date, Param, M)
+  end.
 
 getMaximumStationGrowthTimeUtil(Station, Date, Param, M) ->
   ConvertDateTime = fun calendar:datetime_to_gregorian_seconds/1,
@@ -168,6 +193,7 @@ getMaximumStationGrowthTimeUtil(Station, Date, Param, M) ->
            end,
 
   case findMatchingMeasurements(Station, Date, Param, M) of
+    {error, R} -> {error, R};
     [] -> {zero_growth, "Zero measurements available"};
     [_ | []] -> {zero_growth, "Only one measurement available"};
     MsList when is_list(MsList) ->
